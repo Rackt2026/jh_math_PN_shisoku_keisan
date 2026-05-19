@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="数学マスター">
+    
+    <title>数学マスター極：正負の四則試練</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            background-color: #eef2f3; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-start;
+            min-height: 100vh; 
+            overflow-y: auto; 
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .container { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 20px; 
+            width: 95%; 
+            max-width: 450px; 
+            margin: 10px auto; 
+            display: flex; 
+            flex-direction: column; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
+            box-sizing: border-box; 
+            position: relative;
+        }
+
+        /* スタート画面のスタイル */
+        .menu-title { text-align: center; color: #2196f3; font-size: 1.6rem; margin-bottom: 20px; font-weight: bold; line-height: 1.4; }
+        .menu-list { display: flex; flex-direction: column; gap: 12px; }
+        .menu-btn { background-color: #fff; border: 2px solid #2196f3; color: #2196f3; padding: 12px 15px; border-radius: 12px; font-size: 0.95rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #1976d2; text-align: left; transition: all 0.1s; -webkit-tap-highlight-color: transparent; }
+        .menu-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #1976d2; }
+        
+        .header-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; z-index: 10; }
+        .back-btn { background-color: #9e9e9e; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.75rem; border: none; cursor: pointer; font-weight: bold; }
+        .reset-btn { background-color: #f44336; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.75rem; border: none; cursor: pointer; font-weight: bold; }
+
+        .info { display: flex; justify-content: space-around; font-size: 0.9rem; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 5px; }
+        
+        .problem-box { 
+            background: #f8f9fa; 
+            border-radius: 12px; 
+            padding: 20px 10px; 
+            flex-grow: 1; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            border: 1px solid #e0e0e0; 
+            margin-bottom: 15px; 
+            position: relative; 
+            min-height: 120px; 
+        }
+        .problem { font-size: 1.8rem; font-weight: bold; color: #2c3e50; text-align: center; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px; line-height: 1.5; }
+        
+        /* 分数表示用のCSS */
+        .frac-container { display: inline-flex; align-items: center; vertical-align: middle; }
+        .whole-num { font-size: 1.8rem; font-weight: bold; margin-right: 2px; }
+        .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; padding: 0 4px; font-size: 1.5rem; line-height: 1; }
+        .frac .num { border-bottom: 2px solid #2c3e50; padding-bottom: 2px; width: 100%; text-align: center; }
+        .frac .den { padding-top: 2px; width: 100%; text-align: center; }
+
+        #feedback-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; pointer-events: none; opacity: 0; transform: scale(0.5); transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); background: rgba(255,255,255,0.8); }
+        #feedback-overlay.show { opacity: 1; transform: scale(1); }
+        #feedback-text { font-size: 2.2rem; font-weight: 900; text-align: center; line-height: 1.2; -webkit-text-stroke: 2px white; paint-order: stroke; }
+
+        /* アクションエリア */
+        .action-area { display: flex; flex-direction: column; gap: 10px; }
+        .action-btn { background-color: #2196f3; color: white; border: none; border-radius: 12px; font-size: 1.4rem; padding: 15px 0; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #1976d2; text-align: center; -webkit-tap-highlight-color: transparent; }
+        .action-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #1976d2; }
+        
+        .ans-display { font-size: 2rem; background: #fff; border: 2px solid #cbd5e0; border-radius: 12px; min-height: 60px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #e91e63; padding: 10px; box-sizing: border-box; }
+
+        /* 解説画面用 */
+        #explanation-content .frac { font-size: 1.2rem; }
+        #explanation-content p { margin: 6px 0; font-size: 0.95rem; color: #333; }
+        #explanation-content h4 { margin: 12px 0 4px 0; font-size: 1.05rem; }
+        .step-box { background: #f8f9fa; border-left: 4px solid #2196f3; padding: 8px 12px; margin: 8px 0; border-radius: 0 8px 8px 0; font-weight: bold; font-size: 1.05rem; color: #2c3e50; }
+
+        /* 筆算用テーブルスタイル */
+        .hissan-table { border-collapse: collapse; margin: 5px 0 5px 10px; font-family: monospace; font-size: 1.3rem; }
+        .hissan-table td { padding: 2px 4px; text-align: center; width: 20px; }
+        .hissan-table .border-top { border-top: 2px solid #2c3e50; }
+
+        .result-screen { display: none; text-align: center; justify-content: center; align-items: center; flex-direction: column; min-height: 85vh; background: #764ba2; color: white; border-radius: 20px; padding: 20px; }
+        
+        .shake { animation: shake 0.3s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } }
+        .confetti { position: absolute; width: 8px; height: 8px; z-index: 101; border-radius: 50%; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="start-screen">
+    <div class="menu-title">数学マスター極<br><span style="font-size: 1.1rem; color:#555;">〜 正負の数：四則計算の試練 〜</span></div>
+    <div class="menu-list">
+        <button class="menu-btn" onclick="startGame(1)">１、正負の数の四則計算（自然数）</button>
+        <button class="menu-btn" onclick="startGame(2)">２、正負の数の四則計算（自然数、分数ミックス）</button>
+        <button class="menu-btn" onclick="startGame(3)">３、正負の数の四則計算（自然数、小数ミックス）</button>
+        <button class="menu-btn" onclick="startGame(4)">４、正負の数の四則計算（分数のみ）</button>
+        <button class="menu-btn" onclick="startGame(5)">５、正負の数の四則計算（小数のみ）</button>
+    </div>
+</div>
+
+<div class="container" id="game-screen" style="display: none;">
+    <div id="feedback-overlay"><div id="feedback-text"></div></div>
+    
+    <div class="header-controls">
+        <button class="back-btn" onclick="backToTitle()">← タイトル</button>
+        <div style="font-size: 0.8rem; color: #333; font-weight: bold;" id="mode-title-display">モード</div>
+        <button class="reset-btn" onclick="resetGame()">やり直す</button>
+    </div>
+
+    <div class="info">
+        <div>残り: <span id="q-count">10</span></div>
+        <div style="color:#4caf50">正解: <span id="correct-count">0</span></div>
+        <div style="color:#f44336">ミス: <span id="miss-count">0</span></div>
+    </div>
+
+    <div class="problem-box" id="p-box">
+        <div id="problem" class="problem">...</div>
+    </div>
+
+    <div class="action-area">
+        <button id="show-ans-btn" class="action-btn" onclick="showAnswer()">正解は？</button>
+        
+        <div id="answer-wrapper" style="display: none; flex-direction: column; gap: 8px;">
+            <div style="font-size:0.8rem; color:#666; font-weight:bold;">【正解】</div>
+            <div id="answer-display" class="ans-display"></div>
+            
+            <button class="action-btn" style="background-color: #ff9800; box-shadow: 0 4px 0 #f57c00; font-size: 1.1rem; padding: 10px 0; margin-top: 5px;" onclick="showExplanation()">解き方の解説をみる</button>
+            
+            <button class="action-btn" style="background-color: #4caf50; box-shadow: 0 4px 0 #388e3c; margin-top: 15px;" onclick="submitAndProceed()">次へ進む ➔</button>
+        </div>
+    </div>
+</div>
+
+<div class="container" id="explanation-screen" style="display: none;">
+    <div class="header-controls">
+        <button class="back-btn" onclick="hideExplanation()">← 戻る</button>
+        <div style="font-size: 0.8rem; color: #333; font-weight: bold;">解き方の解説</div>
+        <div style="width: 40px;"></div>
+    </div>
+    
+    <div id="explanation-content" style="padding: 10px 5px; overflow-y: auto; max-height: 65vh; line-height: 1.6;">
+        </div>
+    
+    <button class="action-btn" style="background-color: #9e9e9e; box-shadow: 0 4px 0 #757575; font-size: 1.1rem; padding: 12px 0; margin-top: 10px;" onclick="hideExplanation()">解説を閉じて戻る</button>
+</div>
+
+<div class="container result-screen" id="result-screen">
+    <h1>試練達成！</h1>
+    <div style="font-size: 5rem; font-weight: 900; margin: 10px 0;"><span id="final-score">0</span>点</div>
+    <p style="font-size: 1.2rem; margin-bottom: 25px;">正解：<span id="final-correct">0</span> / ミス：<span id="final-miss">0</span></p>
+    <button class="action-btn" style="background-color: #fff; color: #764ba2; width: 80%; box-shadow: 0 4px 0 #5e35b1;" onclick="backToTitle()">タイトルに戻る</button>
+</div>
+
+<script>
+    let currentMode = 1;
+    let questionIndex = 0;
+    let correctTotal = 0;
+    let missTotal = 0;
+    let totalQuestions = 10;
+    
+    let currentAnswerObj = { num: 0, den: 1 };
+    let fracDigitPattern = []; 
+    
+    let currentT1, currentT2, currentOp;
+
+    const modeNames = [
+        "", "自然数の四則計算", "自然数・分数ミックス", "自然数・小数ミックス", "分数のみの四則計算", "小数のみの四則計算"
+    ];
+    
+    const msgSupport = [
+        "さぁ次の問題も頑張ろう！",
+        "その調子！次もいってみよう！",
+        "ナイス！次へ進もう！",
+        "いいリズム！次の問題へレッツゴー！",
+        "次もこの調子でクリアしよう！"
+    ];
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playTone(freq, type, duration, g) {
+        try {
+            if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(g, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + duration);
+        } catch(e){}
+    }
+    function soundCorrect() { playTone(880, 'sine', 0.4, 0.1); setTimeout(() => playTone(1318, 'sine', 0.4, 0.08), 80); }
+    function soundWrong() { playTone(220, 'triangle', 0.3, 0.15); }
+
+    function createConfetti() {
+        const pBox = document.getElementById('p-box');
+        for (let i = 0; i < 25; i++) {
+            const c = document.createElement('div');
+            c.className = 'confetti';
+            c.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+            c.style.left = Math.random() * 100 + '%';
+            c.style.top = Math.random() * 100 + '%';
+            pBox.appendChild(c);
+            setTimeout(() => c.remove(), 600);
+        }
+    }
+
+    function showFeedback(type, text) {
+        const overlay = document.getElementById('feedback-overlay');
+        const fText = document.getElementById('feedback-text');
+        const pText = document.getElementById('problem');
+        overlay.classList.remove('show');
+        pText.classList.remove('shake');
+
+        if (type === 'correct') {
+            soundCorrect();
+            fText.innerText = text;
+            fText.style.color = '#4caf50';
+            createConfetti();
+        } else {
+            soundWrong();
+            fText.innerText = "どんまい！";
+            fText.style.color = '#f44336';
+            pText.classList.add('shake');
+        }
+        setTimeout(() => overlay.classList.add('show'), 10);
+        setTimeout(() => { overlay.classList.remove('show'); }, 1000);
+    }
+
+    function gcd(a, b) { return b ? gcd(b, a % b) : Math.abs(a); }
+    function lcm(a, b) { return (a * b) / gcd(a, b); }
+    function simplify(f) {
+        let g = gcd(f.num, f.den);
+        let num = f.num / g;
+        let den = f.den / g;
+        if (den < 0) { num = -num; den = -den; }
+        return { num, den };
+    }
+    const math = {
+        add: (f1, f2) => simplify({ num: f1.num * f2.den + f2.num * f1.den, den: f1.den * f2.den }),
+        sub: (f1, f2) => simplify({ num: f1.num * f2.den - f2.num * f1.den, den: f1.den * f2.den }),
+        mul: (f1, f2) => simplify({ num: f1.num * f2.num, den: f1.den * f2.den }),
+        div: (f1, f2) => simplify({ num: f1.num * f2.den, den: f1.den * f2.num })
+    };
+
+    function startGame(mode) {
+        if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+        currentMode = mode;
+        document.getElementById('start-screen').style.display = "none";
+        document.getElementById('game-screen').style.display = "flex";
+        document.getElementById('mode-title-display').innerText = modeNames[mode];
+        resetGame();
+    }
+
+    function backToTitle() {
+        document.getElementById('game-screen').style.display = "none";
+        document.getElementById('explanation-screen').style.display = "none";
+        document.getElementById('result-screen').style.display = "none";
+        document.getElementById('start-screen').style.display = "flex";
+    }
+
+    function resetGame() {
+        questionIndex = 0;
+        correctTotal = 0;
+        missTotal = 0;
+        fracDigitPattern = [1, 1, 1, 1, 1, 1, 1, 1, 2, 2].sort(() => Math.random() - 0.5);
+        updateUI();
+        nextProblem();
+    }
+
+    function updateUI() {
+        document.getElementById('q-count').innerText = totalQuestions - questionIndex;
+        document.getElementById('correct-count').innerText = correctTotal;
+        document.getElementById('miss-count').innerText = missTotal;
+    }
+
+    function generateTerm(type, forcedDen = null) {
+        let sign = Math.random() > 0.5 ? 1 : -1;
+        let signStr = sign === 1 ? '+' : '-';
+        let res = { type, sign, signStr };
+
+        if (type === 'int') {
+            let v = Math.floor(Math.random() * 19) + 2; 
+            res.val = { num: sign * v, den: 1 };
+            res.absStr = `${v}`;
+            res.html = `(${signStr}${v})`;
+            res.rawAbs = v;
+        } 
+        else if (type === 'frac') {
+            let digits = fracDigitPattern[questionIndex] || 1;
+            let d, n;
+            
+            if (forcedDen) {
+                d = forcedDen;
+                if (digits === 1) {
+                    n = Math.floor(Math.random() * 9) + 1;
+                } else {
+                    n = Math.floor(Math.random() * 40) + 10;
+                }
+            } else {
+                if (digits === 1) {
+                    d = Math.floor(Math.random() * 8) + 2; 
+                    n = Math.floor(Math.random() * 9) + 1; 
+                } else {
+                    const niceDens = [10, 12, 15, 16, 18, 20, 24, 25, 30, 36, 40, 45, 50, 60, 80, 90];
+                    d = niceDens[Math.floor(Math.random() * niceDens.length)];
+                    n = Math.floor(Math.random() * 40) + 10; 
+                }
+            }
+            
+            res.val = { num: sign * n, den: d };
+            res.rawAbs = { num: n, den: d };
+            
+            let isMixed = Math.random() > 0.5 && n > d;
+            if (isMixed) {
+                let w = Math.floor(n / d);
+                let r = n % d;
+                if (r === 0) { r = 1; n = w * d + 1; res.val = { num: sign * n, den: d }; res.rawAbs = { num: n, den: d }; }
+                res.absStr = `${w}と${r}/${d}`;
+                res.html = `(${signStr}<span class="frac-container"><span class="whole-num">${w}</span><span class="frac"><span class="num">${r}</span><span class="den">${d}</span></span></span>)`;
+            } else {
+                res.absStr = `<span class="frac"><span class="num">${n}</span><span class="den">${d}</span></span>`;
+                res.html = `(${signStr}<span class="frac"><span class="num">${n}</span><span class="den">${d}</span></span>)`;
+            }
+        } 
+        else if (type === 'dec') {
+            let intPart = Math.floor(Math.random() * 10); 
+            let decPart = Math.floor(Math.random() * 9) + 1; 
+            let totalNum = intPart * 10 + decPart;
+            res.val = { num: sign * totalNum, den: 10 };
+            res.absStr = `${intPart}.${decPart}`;
+            res.html = `(${signStr}${intPart}.${decPart})`;
+            res.rawAbs = intPart + (decPart / 10);
+        }
+        return res;
+    }
+
+    function getModeTypes(mode) {
+        switch(mode) {
+            case 1: return ['int', 'int'];
+            case 2: return [Math.random() > 0.5 ? 'int' : 'frac', Math.random() > 0.5 ? 'int' : 'frac'];
+            case 3: return [Math.random() > 0.5 ? 'int' : 'dec', Math.random() > 0.5 ? 'int' : 'dec'];
+            case 4: return ['frac', 'frac'];
+            case 5: return ['dec', 'dec'];
+        }
+    }
+
+    function nextProblem() {
+        document.getElementById('show-ans-btn').style.display = "block";
+        document.getElementById('answer-wrapper').style.display = "none";
+
+        let types = getModeTypes(currentMode);
+        let digits = fracDigitPattern[questionIndex] || 1;
+
+        const ops = [
+            { sign: '＋', action: math.add }, { sign: '－', action: math.sub },
+            { sign: '×', action: math.mul }, { sign: '÷', action: math.div }
+        ];
+
+        let loopCount = 0;
+        do {
+            let den1 = null;
+            let den2 = null;
+
+            if (digits === 2 && types[0] === 'frac' && types[1] === 'frac') {
+                const niceDens = [10, 12, 15, 16, 18, 20, 24, 25, 30, 36, 40, 45, 50, 60, 80, 90];
+                let baseDen = niceDens[Math.floor(Math.random() * niceDens.length)];
+                if (Math.random() < 0.7) {
+                    den1 = baseDen; den2 = baseDen;
+                } else {
+                    den1 = baseDen;
+                    if (baseDen <= 45 && Math.random() > 0.5) { den2 = baseDen * 2; }
+                    else if (baseDen % 2 === 0) { den2 = baseDen / 2; }
+                    else { den2 = baseDen; }
+                }
+            }
+
+            currentT1 = generateTerm(types[0], den1);
+            currentT2 = generateTerm(types[1], den2);
+            currentOp = ops[Math.floor(Math.random() * ops.length)];
+            currentAnswerObj = currentOp.action(currentT1.val, currentT2.val);
+
+            loopCount++;
+            if (loopCount > 300) break;
+
+            let ansDen = currentAnswerObj.den;
+            let ansNum = Math.abs(currentAnswerObj.num);
+
+            if (digits === 1) {
+                if (ansDen > 20 || ansNum > 30) continue;
+            } else {
+                if (ansDen > 25 || ansNum > 35) continue;
+            }
+            break; 
+        } while (true);
+
+        document.getElementById('problem').innerHTML = `${currentT1.html} ${currentOp.sign} ${currentT2.html} ＝ ？`;
+    }
+
+    function showAnswer() {
+        if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+        
+        let ansHtml = "";
+        let val = currentAnswerObj.num / currentAnswerObj.den;
+
+        if (currentAnswerObj.den === 1) {
+            ansHtml = currentAnswerObj.num;
+        } 
+        else if ((currentMode === 3 || currentMode === 5) && Math.round(val * 10) === val * 10) {
+            ansHtml = val.toFixed(1);
+        } 
+        else {
+            let sign = currentAnswerObj.num < 0 ? "－" : "";
+            let n = Math.abs(currentAnswerObj.num);
+            let d = currentAnswerObj.den;
+            ansHtml = `${sign}<span class="frac"><span class="num">${n}</span><span class="den">${d}</span></span>`;
+            
+            if (currentMode === 3 || currentMode === 5) {
+                ansHtml += `<span style="font-size:1.1rem; color:#666; margin-left:10px;">(約 ${val.toFixed(1)})</span>`;
+            }
+        }
+
+        document.getElementById('answer-display').innerHTML = ansHtml;
+        document.getElementById('show-ans-btn').style.display = "none";
+        document.getElementById('answer-wrapper').style.display = "flex";
+    }
+
+    function showExplanation() {
+        document.getElementById('game-screen').style.display = "none";
+        document.getElementById('explanation-screen').style.display = "flex";
+        document.getElementById('explanation-content').innerHTML = generateExplanationHTML();
+    }
+
+    function hideExplanation() {
+        document.getElementById('explanation-screen').style.display = "none";
+        document.getElementById('game-screen').style.display = "flex";
+    }
+
+    function submitAndProceed() {
+        const msg = msgSupport[Math.floor(Math.random() * msgSupport.length)];
+        showFeedback('correct', msg);
+        correctTotal++;
+        setTimeout(proceed, 1000);
+    }
+
+    function proceed() {
+        questionIndex++;
+        if (questionIndex >= totalQuestions) {
+            showResult();
+        } else {
+            updateUI();
+            nextProblem();
+        }
+    }
+
+    function showResult() {
+        document.getElementById('game-screen').style.display = "none";
+        document.getElementById('result-screen').style.display = "flex";
+        const score = Math.round((correctTotal / totalQuestions) * 100);
+        document.getElementById('final-score').innerText = score;
+        document.getElementById('final-correct').innerText = correctTotal;
+        document.getElementById('final-miss').innerText = missTotal;
+    }
+
+    function makeFracHTML(n, d) {
+        if (d === 1) return `<b>${n}</b>`;
+        return `<span class="frac"><span class="num">${n}</span><span class="den">${d}</span></span>`;
+    }
+
+    // 小数の筆算をテーブル構造でHTML化する関数
+    function generateHissanHTML(v1, v2, ans, op) {
+        let s1 = v1.toFixed(1);
+        let s2 = v2.toFixed(1);
+        let s3 = ans.toFixed(1);
+
+        // 最大桁数に合わせて、左側をスペース埋めするための長さを取得
+        let maxLen = Math.max(s1.length, s2.length, s3.length);
+
+        // 各数値を文字配列化して右詰めにする
+        let row1 = s1.padStart(maxLen, ' ').split('');
+        let row2 = s2.padStart(maxLen, ' ').split('');
+        let row3 = s3.padStart(maxLen, ' ').split('');
+
+        let html = `<table class="hissan-table">`;
+        
+        // 1行目 (数値1)
+        html += `<tr><td></td>`; // 演算子用の空セル
+        for(let c of row1) { html += `<td>${c === ' ' ? '&nbsp;' : c}</td>`; }
+        html += `</tr>`;
+
+        // 2行目 (演算子 + 数値2)
+        html += `<tr><td>${op}</td>`;
+        for(let c of row2) { html += `<td>${c === ' ' ? '&nbsp;' : c}</td>`; }
+        html += `</tr>`;
+
+        // 3行目 (計算結果 + 上部境界線)
+        html += `<tr><td class="border-top"></td>`;
+        for(let c of row3) { html += `<td class="border-top">${c === ' ' ? '&nbsp;' : c}</td>`; }
+        html += `</tr>`;
+
+        html += `</table>`;
+        return html;
+    }
+
+    function generateExplanationHTML() {
+        let h = "";
+        h += `<div style="text-align:center; font-weight:bold; margin-bottom:15px; font-size:1.1rem; background:#f0f4f8; padding:10px; border-radius:10px;">`;
+        h += `問題： ${currentT1.html} ${currentOp.sign} ${currentT2.html}`;
+        h += `</div>`;
+
+        h += `<div><h4 style="color:#2196f3;">① 答えの符号をきめよう</h4>`;
+        
+        let effSign2 = currentOp.sign === '－' ? -currentT2.sign : currentT2.sign;
+        let isSameSignAfterBracket = (currentT1.sign === effSign2);
+
+        if (currentOp.sign === '×' || currentOp.sign === '÷') {
+            if (currentT1.sign === currentT2.sign) {
+                h += `<p>・<b>同じ符号（どちらも${currentT1.sign===1?'＋':'－'}）</b>どうしの計算なので、答えの符号は必ず <b style="color:#4caf50;">プラス（＋）</b> になります。</p>`;
+            } else {
+                h += `<p>・<b>違う符号（＋ と －）</b>の組み合わせの計算なので、答えの符号は必ず <b style="color:#f44336;">マイナス（－）</b> になります。</p>`;
+            }
+        } else {
+            h += `<p>・たし算・ひき算は、まず<b>カッコをはずして</b>式をすっきりさせるのがコツです！</p>`;
+            let s1 = currentT1.sign === 1 ? "" : "－";
+            let s2 = effSign2 === 1 ? "＋" : "－";
+            
+            if (currentOp.sign === '－') {
+                h += `<p style="font-size:0.85rem; color:#666;">※「ひき算」は、うしろの数の符号をひっくり返して「たし算」に変えます。</p>`;
+            }
+            h += `<p>➔ カッコをはずした式： <b style="font-size:1.2rem; color:#2c3e50;">${s1}${currentT1.absStr} ${s2}${currentT2.absStr}</b></p>`;
+            
+            if (isSameSignAfterBracket) {
+                h += `<p>➔ 同じ符号の仲間（どちらも${s2 === '＋' ? 'プラス':'マイナス'}）が集まっているので、数字を合計して共通の符号をつけます。</p>`;
+            } else {
+                h += `<p>➔ 違う符号の集まり（プラスとマイナス）なので、<b>数字の大きい方から小さい方を引き算</b>して、数字が大きい方の符号を勝ち残らせます。</p>`;
+            }
+        }
+        h += `</div><hr style="border:0; border-top:1px dashed #ddd; margin:10px 0;">`;
+
+        h += `<div><h4 style="color:#2196f3;">② 数字の部分の計算過程</h4>`;
+        
+        let isDecimalMode = (currentMode === 3 || currentMode === 5) && (currentT1.type === 'dec' || currentT2.type === 'dec');
+        
+        let n1 = Math.abs(currentT1.val.num);
+        let d1 = currentT1.val.den;
+        let n2 = Math.abs(currentT2.val.num);
+        let d2 = currentT2.val.den;
+        
+        let opSign = currentOp.sign;
+
+        if (isDecimalMode) {
+            // 小数モード
+            let v1 = currentT1.rawAbs;
+            let v2 = currentT2.rawAbs;
+            h += `<p>小数のまま、数字の大きさに注目して計算を進めます。</p>`;
+            
+            if (opSign === '×') {
+                let ansDec = v1 * v2;
+                h += `<p>➔ かけ算の式： <b>${v1} × ${v2}</b></p>`;
+                h += `<div class="step-box">計算結果 ＝ ${ansDec.toFixed(2)}</div>`;
+            } else if (opSign === '÷') {
+                let ansDec = v1 / v2;
+                h += `<p>➔ わり算の式： <b>${v1} ÷ ${v2}</b></p>`;
+                h += `<div class="step-box">計算結果 ＝ ${ansDec.toFixed(2)}</div>`;
+            } else {
+                if (isSameSignAfterBracket) {
+                    let ansDec = v1 + v2;
+                    h += `<p>➔ 同じ符号の集まりなので絶対値を足し算します： <b>${v1} ＋ ${v2}</b></p>`;
+                    h += `<div class="step-box">${generateHissanHTML(v1, v2, ansDec, '＋')}</div>`;
+                } else {
+                    if (v1 >= v2) {
+                        let ansDec = v1 - v2;
+                        h += `<p>➔ 引き算の式（大きい方 － 小さい方）： <b>${v1} － ${v2}</b></p>`;
+                        h += `<div class="step-box">${generateHissanHTML(v1, v2, ansDec, '－')}</div>`;
+                    } else {
+                        let ansDec = v2 - v1;
+                        h += `<p>➔ 引き算の式（大きい方 － 小さい方）： <b>${v2} － ${v1}</b></p>`;
+                        h += `<div class="step-box">${generateHissanHTML(v2, v1, ansDec, '－')}</div>`;
+                    }
+                }
+            }
+        } 
+        else {
+            // 分数・自然数モード
+            if (opSign === '×') {
+                let rawNum = n1 * n2;
+                let rawDen = d1 * d2;
+                h += `<p>➔ かけ算の式： ${makeFracHTML(n1, d1)} × ${makeFracHTML(n2, d2)}</p>`;
+                h += `<p>➔ 分母同士、分子同士をそれぞれ合体させます。</p>`;
+                h += `<div class="step-box">＝ ${makeFracHTML(`${n1} × ${n2}`, `${d1} × ${d2}`)}<br><br>＝ ${makeFracHTML(rawNum, rawDen)}</div>`;
+                if (gcd(rawNum, rawDen) > 1 && rawDen !== 1) {
+                    h += `<p style="font-size:0.85rem; color:#666;">※ここから約分（同じ数でわる）をします。</p>`;
+                }
+            } 
+            else if (opSign === '÷') {
+                let rawNum = n1 * d2;
+                let rawDen = d1 * n2;
+                h += `<p>➔ わり算の式： ${makeFracHTML(n1, d1)} ÷ ${makeFracHTML(n2, d2)}</p>`;
+                h += `<p>➔ <b>後ろの分数をひっくり返して（逆数にして）かけ算</b>に直します。</p>`;
+                h += `<div class="step-box">＝ ${makeFracHTML(n1, d1)} × ${makeFracHTML(d2, n2)}<br><br>＝ ${makeFracHTML(`${n1} × ${d2}`, `${d1} × ${n2}`)}<br><br>＝ ${makeFracHTML(rawNum, rawDen)}</div>`;
+                if (gcd(rawNum, rawDen) > 1 && rawDen !== 1) {
+                    h += `<p style="font-size:0.85rem; color:#666;">※ここから約分（同じ数でわる）をします。</p>`;
+                }
+            }
+            else {
+                // たし算・ひき算
+                if (d1 === 1 && d2 === 1) {
+                    if (isSameSignAfterBracket) {
+                        h += `<p>➔ 同じ符号なので絶対値を足し算： <b>${n1} ＋ ${n2}</b></p>`;
+                        h += `<div class="step-box">＝ ${n1 + n2}</div>`;
+                    } else {
+                        if (n1 >= n2) {
+                            h += `<p>➔ 違う符号ので引き算（大きい方 － 小さい方）： <b>${n1} － ${n2}</b></p>`;
+                            h += `<div class="step-box">＝ ${n1 - n2}</div>`;
+                        } else {
+                            h += `<p>➔ 違う符号ので引き算（大きい方 － 小さい方）： <b>${n2} － ${n1}</b></p>`;
+                            h += `<div class="step-box">＝ ${n2 - n1}</div>`;
+                        }
+                    }
+                } else {
+                    // 分数の通分プロセス
+                    let commonDen = lcm(d1, d2);
+                    let newN1 = n1 * (commonDen / d1);
+                    let newN2 = n2 * (commonDen / d2);
+                    
+                    h += `<p>分母を <b>${commonDen}</b> にそろえます（通分）。</p>`;
+                    h += `<p>➔ ${makeFracHTML(`${n1} × ${commonDen/d1}`, `${d1} × ${commonDen/d1}`)} と ${makeFracHTML(`${n2} × ${commonDen/d2}`, `${d2} × ${commonDen/d2}`)}</p>`;
+                    
+                    if (isSameSignAfterBracket) {
+                        h += `<p>➔ 通分した式： ${makeFracHTML(newN1, commonDen)} ＋ ${makeFracHTML(newN2, commonDen)}</p>`;
+                        h += `<div class="step-box">＝ ${makeFracHTML(`${newN1} ＋ ${newN2}`, commonDen)}<br><br>＝ ${makeFracHTML(newN1 + newN2, commonDen)}</div>`;
+                    } else {
+                        if (newN1 >= newN2) {
+                            h += `<p>➔ 通分した式（大きい分子 － 小さい分子）： ${makeFracHTML(newN1, commonDen)} － ${makeFracHTML(newN2, commonDen)}</p>`;
+                            h += `<div class="step-box">＝ ${makeFracHTML(`${newN1} － ${newN2}`, commonDen)}<br><br>＝ ${makeFracHTML(newN1 - newN2, commonDen)}</div>`;
+                        } else {
+                            h += `<p>➔ 通分した式（大きい分子 － 小さい分子）： ${makeFracHTML(newN2, commonDen)} － ${makeFracHTML(newN1, commonDen)}</p>`;
+                            h += `<div class="step-box">＝ ${makeFracHTML(`${newN2} － ${newN1}`, commonDen)}<br><br>＝ ${makeFracHTML(newN2 - newN1, commonDen)}</div>`;
+                        }
+                    }
+                }
+            }
+        }
+
+        let absNum = Math.abs(currentAnswerObj.num);
+        let absDen = currentAnswerObj.den;
+        let finalVal = absNum / absDen;
+        
+        if (absDen === 1 || isDecimalMode) {
+            h += `<p style="margin-top:10px;">➔ 計算した数字： `;
+        } else {
+            h += `<p style="margin-top:10px;">➔ 約分してきれいに整えた数字： `;
+        }
+
+        if (isDecimalMode && Math.round(finalVal * 10) === finalVal * 10) {
+            h += `<b>${finalVal.toFixed(1)}</b>`;
+        } else {
+            if (absDen === 1) {
+                h += `<b>${absNum}</b>`;
+            } else {
+                h += `${makeFracHTML(absNum, absDen)}`;
+            }
+        }
+        h += `</p></div><hr style="border:0; border-top:1px dashed #ddd; margin:10px 0;">`;
+
+        h += `<div><h4 style="color:#e91e63;">③ まとめ</h4>`;
+        h += `<p>①で決定した符号と、②で最後まで計算した数字を合体させます。</p>`;
+        
+        let finalAnsStr = "";
+        if (absDen === 1) {
+            finalAnsStr = currentAnswerObj.num;
+        } else if (isDecimalMode && Math.round(finalVal * 10) === finalVal * 10) {
+            finalAnsStr = (currentAnswerObj.num / absDen).toFixed(1);
+        } else {
+            let s = currentAnswerObj.num < 0 ? "－" : "";
+            finalAnsStr = `${s}${makeFracHTML(absNum, absDen)}`;
+        }
+        
+        h += `<div style="font-size:1.4rem; font-weight:bold; text-align:center; background:#fff3e0; padding:10px; border-radius:8px; border:1px solid #ffe0b2; margin-top:5px; color:#e91e63;">`;
+        h += `正解は ＝ ${finalAnsStr}`;
+        h += `</div></div>`;
+
+        return h;
+    }
+</script>
+</body>
+</html>
