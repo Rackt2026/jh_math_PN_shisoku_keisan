@@ -81,7 +81,7 @@
         .action-btn { background-color: #2196f3; color: white; border: none; border-radius: 12px; font-size: 1.4rem; padding: 15px 0; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #1976d2; text-align: center; -webkit-tap-highlight-color: transparent; }
         .action-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #1976d2; }
         
-        .ans-display { font-size: 2rem; background: #fff; border: 2px solid #cbd5e0; border-radius: 12px; min-height: 60px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #e91e63; padding: 10px; box-sizing: border-box; }
+        .ans-display { font-size: 1.8rem; background: #fff; border: 2px solid #cbd5e0; border-radius: 12px; min-height: 60px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #e91e63; padding: 10px; box-sizing: border-box; text-align: center; }
 
         /* 解説画面用 */
         #explanation-content .frac { font-size: 1.2rem; }
@@ -205,7 +205,7 @@
     const msgSupport = [
         "さぁ次の問題も頑張ろう！",
         "その調子！次もいってみよう！",
-        "ナイス！次へ進おう！",
+        "ナイス！次へ進もう！",
         "いいリズム！次の問題へレッツゴー！",
         "次もこの調子でクリアしよう！"
     ];
@@ -273,6 +273,15 @@
         mul: (f1, f2) => simplify({ num: f1.num * f2.num, den: f1.den * f2.den }),
         div: (f1, f2) => simplify({ num: f1.num * f2.den, den: f1.den * f2.num })
     };
+
+    // 小数として有限桁数で割り切れる（分母の素因数が2と5のみ）かを判定する関数
+    function isTerminatingDecimal(den) {
+        let d = Math.abs(den);
+        if (d === 0) return false;
+        while (d % 2 === 0) d /= 2;
+        while (d % 5 === 0) d /= 5;
+        return d === 1;
+    }
 
     function startGame(mode) {
         if (audioCtx.state === 'suspended') { audioCtx.resume(); }
@@ -393,4 +402,293 @@
             let den1 = null;
             let den2 = null;
 
-            if (digits === 2
+            if (digits === 2 && types[0] === 'frac' && types[1] === 'frac') {
+                const niceDens = [10, 12, 15, 16, 18, 20, 24, 25, 30, 36, 40, 45, 50, 60, 80, 90];
+                let baseDen = niceDens[Math.floor(Math.random() * niceDens.length)];
+                if (Math.random() < 0.7) {
+                    den1 = baseDen; den2 = baseDen;
+                } else {
+                    den1 = baseDen;
+                    if (baseDen <= 45 && Math.random() > 0.5) { den2 = baseDen * 2; }
+                    else if (baseDen % 2 === 0) { den2 = baseDen / 2; }
+                    else { den2 = baseDen; }
+                }
+            }
+
+            currentT1 = generateTerm(types[0], den1);
+            currentT2 = generateTerm(types[1], den2);
+            currentOp = ops[Math.floor(Math.random() * ops.length)];
+            currentAnswerObj = currentOp.action(currentT1.val, currentT2.val);
+
+            loopCount++;
+            if (loopCount > 300) break;
+
+            let ansDen = currentAnswerObj.den;
+            let ansNum = Math.abs(currentAnswerObj.num);
+
+            if (digits === 1) {
+                if (ansDen > 20 || ansNum > 30) continue;
+            } else {
+                if (ansDen > 25 || ansNum > 35) continue;
+            }
+            break; 
+        } while (true);
+
+        document.getElementById('problem').innerHTML = `${currentT1.html} ${currentOp.sign} ${currentT2.html} ＝ ？`;
+    }
+
+    function showAnswer() {
+        if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+        
+        let ansHtml = "";
+        
+        if (currentAnswerObj.den === 1) {
+            ansHtml = `${currentAnswerObj.num}`;
+        } 
+        else {
+            let sign = currentAnswerObj.num < 0 ? "－" : "";
+            let n = Math.abs(currentAnswerObj.num);
+            let d = currentAnswerObj.den;
+            
+            // 小数として割り切れる場合は両方の表記を出すOK仕様
+            if (isTerminatingDecimal(d)) {
+                let decVal = currentAnswerObj.num / d;
+                // マイナス符号の文字位置調整
+                let decStr = decVal < 0 ? `－${Math.abs(decVal)}` : `${decVal}`;
+                ansHtml = `<span class="frac"><span class="num">${n}</span><span class="den">${d}</span></span><br><span style="font-size:1.1rem; color:#555; font-weight:normal;">または ${decStr}</span>`;
+            } else {
+                // 割り切れない場合は分数のみ提示
+                ansHtml = `${sign}<span class="frac"><span class="num">${n}</span><span class="den">${d}</span></span>`;
+            }
+        }
+
+        document.getElementById('answer-display').innerHTML = ansHtml;
+        document.getElementById('show-ans-btn').style.display = "none";
+        document.getElementById('answer-wrapper').style.display = "flex";
+    }
+
+    function showExplanation() {
+        document.getElementById('game-screen').style.display = "none";
+        document.getElementById('explanation-screen').style.display = "flex";
+        document.getElementById('explanation-content').innerHTML = generateExplanationHTML();
+    }
+
+    function hideExplanation() {
+        document.getElementById('explanation-screen').style.display = "none";
+        document.getElementById('game-screen').style.display = "flex";
+    }
+
+    function submitAndProceed() {
+        const msg = msgSupport[Math.floor(Math.random() * msgSupport.length)];
+        showFeedback('correct', msg);
+        correctTotal++;
+        setTimeout(proceed, 1000);
+    }
+
+    function proceed() {
+        questionIndex++;
+        if (questionIndex >= totalQuestions) {
+            showResult();
+        } else {
+            updateUI();
+            nextProblem();
+        }
+    }
+
+    function showResult() {
+        document.getElementById('game-screen').style.display = "none";
+        document.getElementById('result-screen').style.display = "flex";
+        const score = Math.round((correctTotal / totalQuestions) * 100);
+        document.getElementById('final-score').innerText = score;
+        document.getElementById('final-correct').innerText = correctTotal;
+        document.getElementById('final-miss').innerText = missTotal;
+    }
+
+    function makeFracHTML(n, d) {
+        if (d === 1) return `<b>${n}</b>`;
+        return `<span class="frac"><span class="num">${n}</span><span class="den">${d}</span></span>`;
+    }
+
+    function generateHissanHTML(v1, v2, ans, op) {
+        let s1 = v1.toFixed(1);
+        let s2 = v2.toFixed(1);
+        let s3 = ans.toFixed(1);
+
+        let maxLen = Math.max(s1.length, s2.length, s3.length);
+
+        let row1 = s1.padStart(maxLen, ' ').split('');
+        let row2 = s2.padStart(maxLen, ' ').split('');
+        let row3 = s3.padStart(maxLen, ' ').split('');
+
+        let html = `<table class="hissan-table">`;
+        
+        html += `<tr><td></td>`; 
+        for(let c of row1) { html += `<td>${c === ' ' ? '&nbsp;' : c}</td>`; }
+        html += `</tr>`;
+
+        html += `<tr><td>${op}</td>`;
+        for(let c of row2) { html += `<td>${c === ' ' ? '&nbsp;' : c}</td>`; }
+        html += `</tr>`;
+
+        html += `<tr><td class="border-top"></td>`;
+        for(let c of row3) { html += `<td class="border-top">${c === ' ' ? '&nbsp;' : c}</td>`; }
+        html += `</tr>`;
+
+        html += `</table>`;
+        return html;
+    }
+
+    function createYakubunItemHTML(num, gcdVal, position, colorType = 'red') {
+        if (gcdVal <= 1) {
+            return `<span class="yk-block"><span class="yk-sub-top">&nbsp;</span><span class="yk-main">${num}</span><span class="yk-sub-bottom">&nbsp;</span></span>`;
+        }
+        let after = num / gcdVal;
+        
+        let slashClass = 'slashed-red';
+        let numClass = 'color-orange';
+        
+        if (colorType === 'orange') {
+            slashClass = 'slashed-orange';
+            numClass = 'color-orange';
+        } else if (colorType === 'blue') {
+            slashClass = 'slashed-blue';
+            numClass = 'color-blue';
+        }
+
+        if (position === 'top') {
+            return `<span class="yk-block"><span class="yk-sub-top ${numClass}">${after}</span><span class="yk-main ${slashClass}">${num}</span><span class="yk-sub-bottom">&nbsp;</span></span>`;
+        } else {
+            return `<span class="yk-block"><span class="yk-sub-top">&nbsp;</span><span class="yk-main ${slashClass}">${num}</span><span class="yk-sub-bottom ${numClass}">${after}</span></span>`;
+        }
+    }
+
+    function generateYakubunHTML(n1, d1, n2, d2, g1, g2) {
+        let topLeft = createYakubunItemHTML(n1, g1, 'top', 'orange');
+        let topRight = createYakubunItemHTML(n2, g2, 'top', 'blue');
+        let bottomLeft = createYakubunItemHTML(d1, g2, 'bottom', 'blue');
+        let bottomRight = createYakubunItemHTML(d2, g1, 'bottom', 'orange');
+
+        let html = `<span class="frac">`;
+        html += `<span class="num" style="display:inline-flex; align-items:center; justify-content:center; gap:2px; padding-bottom:5px;">${topLeft} × ${topRight}</span>`;
+        html += `<span class="den" style="display:inline-flex; align-items:center; justify-content:center; gap:2px; padding-top:5px;">${bottomLeft} × ${bottomRight}</span>`;
+        html += `</span>`;
+        return html;
+    }
+
+    function generateFinalYakubunHTML(num, den, gcdVal) {
+        let topItem = createYakubunItemHTML(num, gcdVal, 'top', 'red');
+        let bottomItem = createYakubunItemHTML(den, gcdVal, 'bottom', 'red');
+
+        let html = `<span class="frac">`;
+        html += `<span class="num" style="padding-bottom:5px;">${topItem}</span>`;
+        html += `<span class="den" style="padding-top:5px;">${bottomItem}</span>`;
+        html += `</span>`;
+        return html;
+    }
+
+    function generateExplanationHTML() {
+        let h = "";
+        h += `<div style="text-align:center; font-weight:bold; margin-bottom:15px; font-size:1.1rem; background:#f0f4f8; padding:10px; border-radius:10px;">`;
+        h += `問題： ${currentT1.html} ${currentOp.sign} ${currentT2.html}`;
+        h += `</div>`;
+
+        h += `<div><h4 style="color:#2196f3;">① 答えの符号をきめよう</h4>`;
+        
+        let effSign2 = currentOp.sign === '－' ? -currentT2.sign : currentT2.sign;
+        let isSameSignAfterBracket = (currentT1.sign === effSign2);
+
+        if (currentOp.sign === '×' || currentOp.sign === '÷') {
+            if (currentT1.sign === currentT2.sign) {
+                h += `<p>・<b>同じ符号（どちらも${currentT1.sign===1?'＋':'－'}）</b>どうしの計算なので、答えの符号は必ず <b style="color:#4caf50;">プラス（＋）</b> になります。</p>`;
+            } else {
+                h += `<p>・<b>違う符号（＋ と －）</b>の組み合わせの計算なので、答えの符号は必ず <b style="color:#f44336;">マイナス（－）</b> になります。</p>`;
+            }
+        } else {
+            h += `<p>・たし算・ひき算は、まず<b>カッコをはずして</b>式をすっきりさせるのがコツです！</p>`;
+            let s1 = currentT1.sign === 1 ? "" : "－";
+            let s2 = effSign2 === 1 ? "＋" : "－";
+            
+            if (currentOp.sign === '－') {
+                h += `<p style="font-size:0.85rem; color:#666;">※「ひき算」は、うしろの数の符号をひっくり返して「たし算」に変えます。</p>`;
+            }
+            h += `<p>➔ カッコをはずした式： <b style="font-size:1.2rem; color:#2c3e50;">${s1}${currentT1.absStr} ${s2}${currentT2.absStr}</b></p>`;
+            
+            if (isSameSignAfterBracket) {
+                h += `<p>➔ 同じ符号の仲間（どちらも${s2 === '＋' ? 'プラス':'マイナス'}）が集まっているので、数字を合計して共通の符号をつけます。</p>`;
+            } else {
+                h += `<p>➔ 違う符号の集まり（プラスとマイナス）なので、<b>数字の大きい方から小さい方を引き算</b>して、数字が大きい方の符号を勝ち残らせます。</p>`;
+            }
+        }
+        h += `</div><hr style="border:0; border-top:1px dashed #ddd; margin:10px 0;">`;
+
+        h += `<div><h4 style="color:#2196f3;">② 数字の部分の計算過程</h4>`;
+        
+        let isDecimalMode = (currentMode === 3 || currentMode === 5) && (currentT1.type === 'dec' || currentT2.type === 'dec');
+        
+        let n1 = Math.abs(currentT1.val.num);
+        let d1 = currentT1.val.den;
+        let n2 = Math.abs(currentT2.val.num);
+        let d2 = currentT2.val.den;
+        
+        let opSign = currentOp.sign;
+
+        let preReducedNum = 0;
+        let preReducedDen = 1;
+        let wasFractionCalc = false;
+
+        // 小数モードでの判定強化
+        if (isDecimalMode) {
+            // もし割り切れない分数になりそうな場合は、アナウンスを追加
+            if (!isTerminatingDecimal(currentAnswerObj.den)) {
+                h += `<p style="color:#e91e63; font-weight:bold;">⚠️ 小数だと割り切れない問題です：</p>`;
+                h += `<p>この計算は小数のままだと割り切れず、答えが出せなくなってしまいます。そのため、<b>はじめから分数に直して計算</b>を行います！</p>`;
+            }
+        }
+
+        // 小数のわり算モード（最速ななめ約分ロジック内蔵）
+        if (isDecimalMode && opSign === '÷') {
+            wasFractionCalc = true;
+            
+            h += `<p>➔ 小数を分数に直した式： ${makeFracHTML(n1, 10)} ÷ ${makeFracHTML(n2, 10)}</p>`;
+            h += `<p>➔ <b>後ろの分数をひっくり返して（逆数にして）かけ算</b>に直します。</p>`;
+            h += `<p style="margin-left: 10px;">＝ ${makeFracHTML(n1, 10)} × ${makeFracHTML(10, n2)}</p>`;
+            
+            let gcd1 = gcd(n1, n2); 
+            let gcd2 = 10;          
+
+            h += `<p style="color:#ff9800; font-weight:bold;">💡 計算をラクにするコツ（最速約分）：</p>`;
+            h += `<p>数字が大きくなる前に、<b>合体させる前のこの段階で</b>ななめに約分をおこない、数字をできるだけ小さくします！</p>`;
+            
+            let crossStr1 = gcd1 > 1 ? `「分子の ${n1} と 分母の ${n2} を <b class="color-orange">${gcd1}</b> でわる」` : "";
+            let crossStr2 = `「分母の 10 と 分子の 10 を <b class="color-blue">10</b> でわる」`;
+            let connectStr = gcd1 > 1 ? "、さらに" : "";
+            h += `<p style="font-size:0.9rem; color:#555; padding-left:10px;">➔ ${crossStr2}${connectStr}${crossStr1} を先におこないます。</p>`;
+
+            let nextN1 = n1 / gcd1;
+            let nextD2 = n2 / gcd1;
+            let nextN2 = 1; 
+            let nextD1 = 1; 
+
+            preReducedNum = nextN1 * nextN2;
+            preReducedDen = nextD1 * nextD2;
+
+            h += `<div class="step-box" style="line-height: 1.8; padding: 15px 12px;">`;
+            h += `＝ ${generateYakubunHTML(n1, 10, 10, n2, gcd1, 10)}<br><br>`;
+            h += `＝ ${makeFracHTML(`${nextN1} × ${nextN2}`, `${nextD1} × ${nextD2}`)}<br><br>`;
+            h += `＝ ${makeFracHTML(preReducedNum, preReducedDen)}`;
+            h += `</div>`;
+        }
+        else if (isDecimalMode && isTerminatingDecimal(currentAnswerObj.den)) {
+            // 割り切れる場合の小数計算（かけ算・たし算・ひき算）
+            let v1 = currentT1.rawAbs;
+            let v2 = currentT2.rawAbs;
+            h += `<p>小数で割り切れるため、小数のまま数字に注目して計算を進めます。</p>`;
+            
+            if (opSign === '×') {
+                let ansDec = v1 * v2;
+                h += `<p>➔ かけ算の式： <b>${v1} × ${v2}</b></p>`;
+                h += `<div class="step-box">計算結果 ＝ ${ansDec.toFixed(2)}</div>`;
+            } else {
+                if (isSameSignAfterBracket) {
+                    let ansDec = v1 + v2;
+                    h += `<p>➔ 同じ符号の集まりなので絶対値を足し算します： <b>${v1}
