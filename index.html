@@ -92,6 +92,20 @@
         .hissan-table td { padding: 2px 4px; text-align: center; width: 20px; }
         .hissan-table .border-top { border-top: 2px solid #2c3e50; }
 
+        /* 斜め消し線と添え字（手書き約分風）スタイル */
+        .yk-block { display: inline-flex; flex-direction: column; position: relative; line-height: 1.1; vertical-align: middle; text-align: center; min-width: 24px; }
+        .yk-sub-top { font-size: 0.75rem; min-height: 12px; font-weight: bold; text-align: right; padding-right: 2px; }
+        .yk-sub-bottom { font-size: 0.75rem; min-height: 12px; font-weight: bold; text-align: left; padding-left: 2px; }
+        .yk-main { font-size: 1.2rem; position: relative; display: inline-block; padding: 0 2px; }
+        
+        /* 色分け用のスタイル定義 */
+        .color-orange { color: #ff9800; }
+        .color-blue { color: #2196f3; }
+        
+        .slashed-orange { background: linear-gradient(to top left, transparent 46%, #ff9800 49%, #ff9800 51%, transparent 54%); }
+        .slashed-blue { background: linear-gradient(to top left, transparent 46%, #2196f3 49%, #2196f3 51%, transparent 54%); }
+        .slashed-red { background: linear-gradient(to top left, transparent 46%, #ff4444 49%, #ff4444 51%, transparent 54%); }
+
         .result-screen { display: none; text-align: center; justify-content: center; align-items: center; flex-direction: column; min-height: 85vh; background: #764ba2; color: white; border-radius: 20px; padding: 20px; }
         
         .shake { animation: shake 0.3s; }
@@ -184,7 +198,7 @@
     const msgSupport = [
         "さぁ次の問題も頑張ろう！",
         "その調子！次もいってみよう！",
-        "ナイス！次へ進もう！",
+        "ナイス！次へ進おう！",
         "いいリズム！次の問題へレッツゴー！",
         "次もこの調子でクリアしよう！"
     ];
@@ -416,18 +430,11 @@
         if (currentAnswerObj.den === 1) {
             ansHtml = currentAnswerObj.num;
         } 
-        else if ((currentMode === 3 || currentMode === 5) && Math.round(val * 10) === val * 10) {
-            ansHtml = val.toFixed(1);
-        } 
         else {
             let sign = currentAnswerObj.num < 0 ? "－" : "";
             let n = Math.abs(currentAnswerObj.num);
             let d = currentAnswerObj.den;
             ansHtml = `${sign}<span class="frac"><span class="num">${n}</span><span class="den">${d}</span></span>`;
-            
-            if (currentMode === 3 || currentMode === 5) {
-                ansHtml += `<span style="font-size:1.1rem; color:#666; margin-left:10px;">(約 ${val.toFixed(1)})</span>`;
-            }
         }
 
         document.getElementById('answer-display').innerHTML = ansHtml;
@@ -483,32 +490,80 @@
         let s2 = v2.toFixed(1);
         let s3 = ans.toFixed(1);
 
-        // 最大桁数に合わせて、左側をスペース埋めするための長さを取得
         let maxLen = Math.max(s1.length, s2.length, s3.length);
 
-        // 各数値を文字配列化して右詰めにする
         let row1 = s1.padStart(maxLen, ' ').split('');
         let row2 = s2.padStart(maxLen, ' ').split('');
         let row3 = s3.padStart(maxLen, ' ').split('');
 
         let html = `<table class="hissan-table">`;
         
-        // 1行目 (数値1)
-        html += `<tr><td></td>`; // 演算子用の空セル
+        html += `<tr><td></td>`; 
         for(let c of row1) { html += `<td>${c === ' ' ? '&nbsp;' : c}</td>`; }
         html += `</tr>`;
 
-        // 2行目 (演算子 + 数値2)
         html += `<tr><td>${op}</td>`;
         for(let c of row2) { html += `<td>${c === ' ' ? '&nbsp;' : c}</td>`; }
         html += `</tr>`;
 
-        // 3行目 (計算結果 + 上部境界線)
         html += `<tr><td class="border-top"></td>`;
         for(let c of row3) { html += `<td class="border-top">${c === ' ' ? '&nbsp;' : c}</td>`; }
         html += `</tr>`;
 
         html += `</table>`;
+        return html;
+    }
+
+    // 手書き風の約分表現を生成する関数
+    function createYakubunItemHTML(num, gcdVal, position, colorType = 'red') {
+        if (gcdVal <= 1) {
+            return `<span class="yk-block"><span class="yk-sub-top">&nbsp;</span><span class="yk-main">${num}</span><span class="yk-sub-bottom">&nbsp;</span></span>`;
+        }
+        let after = num / gcdVal;
+        
+        let slashClass = 'slashed-red';
+        let numClass = 'color-orange';
+        
+        if (colorType === 'orange') {
+            slashClass = 'slashed-orange';
+            numClass = 'color-orange';
+        } else if (colorType === 'blue') {
+            slashClass = 'slashed-blue';
+            numClass = 'color-blue';
+        }
+
+        if (position === 'top') {
+            return `<span class="yk-block"><span class="yk-sub-top ${numClass}">${after}</span><span class="yk-main ${slashClass}">${num}</span><span class="yk-sub-bottom">&nbsp;</span></span>`;
+        } else {
+            return `<span class="yk-block"><span class="yk-sub-top">&nbsp;</span><span class="yk-main ${slashClass}">${num}</span><span class="yk-sub-bottom ${numClass}">${after}</span></span>`;
+        }
+    }
+
+    // ななめ約分用の色分け対応・合体分数式を生成する関数
+    function generateYakubunHTML(n1, d1, n2, d2, g1, g2) {
+        // g1 (左上分子 と 右下分母) -> オレンジ指定
+        // g2 (左下分母 と 右上分子) -> 青指定
+        let topLeft = createYakubunItemHTML(n1, g1, 'top', 'orange');
+        let topRight = createYakubunItemHTML(n2, g2, 'top', 'blue');
+        let bottomLeft = createYakubunItemHTML(d1, g2, 'bottom', 'blue');
+        let bottomRight = createYakubunItemHTML(d2, g1, 'bottom', 'orange');
+
+        let html = `<span class="frac">`;
+        html += `<span class="num" style="display:inline-flex; align-items:center; justify-content:center; gap:2px; padding-bottom:5px;">${topLeft} × ${topRight}</span>`;
+        html += `<span class="den" style="display:inline-flex; align-items:center; justify-content:center; gap:2px; padding-top:5px;">${bottomLeft} × ${bottomRight}</span>`;
+        html += `</span>`;
+        return html;
+    }
+
+    // 最後の縦方向の約分表示を生成する関数（赤斜線・オレンジ数字のスタイルを維持）
+    function generateFinalYakubunHTML(num, den, gcdVal) {
+        let topItem = createYakubunItemHTML(num, gcdVal, 'top', 'red');
+        let bottomItem = createYakubunItemHTML(den, gcdVal, 'bottom', 'red');
+
+        let html = `<span class="frac">`;
+        html += `<span class="num" style="padding-bottom:5px;">${topItem}</span>`;
+        html += `<span class="den" style="padding-top:5px;">${bottomItem}</span>`;
+        html += `</span>`;
         return html;
     }
 
@@ -558,8 +613,48 @@
         
         let opSign = currentOp.sign;
 
-        if (isDecimalMode) {
-            // 小数モード
+        let preReducedNum = 0;
+        let preReducedDen = 1;
+        let wasFractionCalc = false;
+
+        // 【改良部分】小数のわり算モードの処理変更（分数に転換する）
+        if (isDecimalMode && opSign === '÷') {
+            wasFractionCalc = true;
+            let v1 = currentT1.rawAbs;
+            let v2 = currentT2.rawAbs;
+            
+            h += `<p>小数のわり算は、そのまま割ると割り切れない場合があるため、<b>分数に直して</b>計算を行います。</p>`;
+            h += `<p>➔ 小数を分数に直した式： ${makeFracHTML(n1, 10)} ÷ ${makeFracHTML(n2, 10)}</p>`;
+            h += `<p>➔ <b>後ろの分数をひっくり返して（逆数にして）かけ算</b>に直します。</p>`;
+            h += `<p style="margin-left: 10px;">＝ ${makeFracHTML(n1, 10)} × ${makeFracHTML(10, n2)}</p>`;
+            
+            let gcd1 = gcd(n1, n2); // 分子n1 と 分母n2
+            let gcd2 = 10;          // 分母10 と 分子10 (必ず10で割れる)
+
+            h += `<p style="color:#ff9800; font-weight:bold;">💡 計算をラクにするコツ：</p>`;
+            h += `<p>分母と分子をななめによく見ると、かけ算をして数字を大きくする前に<b>その場で約分</b>ができます！</p>`;
+            
+            let crossStr1 = gcd1 > 1 ? `「分子の ${n1} と 分母の ${n2} を <b class="color-orange">${gcd1}</b> でわる」` : "";
+            let crossStr2 = `「分母の 10 と 分子の 10 を <b class="color-blue">10</b> でわる」`;
+            let connectStr = gcd1 > 1 ? "、さらに" : "";
+            h += `<p style="font-size:0.9rem; color:#555; padding-left:10px;">➔ ${crossStr2}${connectStr}${crossStr1} を先におこないます。</p>`;
+
+            let nextN1 = n1 / gcd1;
+            let nextD2 = n2 / gcd1;
+            let nextN2 = 1; // 10/10
+            let nextD1 = 1; // 10/10
+
+            preReducedNum = nextN1 * nextN2;
+            preReducedDen = nextD1 * nextD2;
+
+            h += `<div class="step-box" style="line-height: 1.8; padding: 15px 12px;">`;
+            h += `＝ ${generateYakubunHTML(n1, 10, 10, n2, gcd1, 10)}<br><br>`;
+            h += `＝ ${makeFracHTML(`${nextN1} × ${nextN2}`, `${nextD1} × ${nextD2}`)}<br><br>`;
+            h += `＝ ${makeFracHTML(preReducedNum, preReducedDen)}`;
+            h += `</div>`;
+        }
+        else if (isDecimalMode) {
+            // かけ算・たし算・ひき算の小数モード
             let v1 = currentT1.rawAbs;
             let v2 = currentT2.rawAbs;
             h += `<p>小数のまま、数字の大きさに注目して計算を進めます。</p>`;
@@ -567,10 +662,6 @@
             if (opSign === '×') {
                 let ansDec = v1 * v2;
                 h += `<p>➔ かけ算の式： <b>${v1} × ${v2}</b></p>`;
-                h += `<div class="step-box">計算結果 ＝ ${ansDec.toFixed(2)}</div>`;
-            } else if (opSign === '÷') {
-                let ansDec = v1 / v2;
-                h += `<p>➔ わり算の式： <b>${v1} ÷ ${v2}</b></p>`;
                 h += `<div class="step-box">計算結果 ＝ ${ansDec.toFixed(2)}</div>`;
             } else {
                 if (isSameSignAfterBracket) {
@@ -592,43 +683,74 @@
         } 
         else {
             // 分数・自然数モード
-            if (opSign === '×') {
-                let rawNum = n1 * n2;
-                let rawDen = d1 * d2;
-                h += `<p>➔ かけ算の式： ${makeFracHTML(n1, d1)} × ${makeFracHTML(n2, d2)}</p>`;
-                h += `<p>➔ 分母同士、分子同士をそれぞれ合体させます。</p>`;
-                h += `<div class="step-box">＝ ${makeFracHTML(`${n1} × ${n2}`, `${d1} × ${d2}`)}<br><br>＝ ${makeFracHTML(rawNum, rawDen)}</div>`;
-                if (gcd(rawNum, rawDen) > 1 && rawDen !== 1) {
-                    h += `<p style="font-size:0.85rem; color:#666;">※ここから約分（同じ数でわる）をします。</p>`;
+            wasFractionCalc = true;
+            if (opSign === '×' || opSign === '÷') {
+                let calcN1 = n1;
+                let calcD1 = d1;
+                let calcN2 = opSign === '÷' ? d2 : n2;
+                let calcD2 = opSign === '÷' ? n2 : d2;
+
+                if (opSign === '÷') {
+                    h += `<p>➔ わり算の式： ${makeFracHTML(n1, d1)} ÷ ${makeFracHTML(n2, d2)}</p>`;
+                    h += `<p>➔ <b>後ろの分数をひっくり返して（逆数にして）かけ算</b>に直します。</p>`;
+                    h += `<p style="margin-left: 10px;">＝ ${makeFracHTML(calcN1, calcD1)} × ${makeFracHTML(calcN2, calcD2)}</p>`;
+                } else {
+                    h += `<p>➔ かけ算の式： ${makeFracHTML(calcN1, calcD1)} × ${makeFracHTML(calcN2, calcD2)}</p>`;
                 }
-            } 
-            else if (opSign === '÷') {
-                let rawNum = n1 * d2;
-                let rawDen = d1 * n2;
-                h += `<p>➔ わり算の式： ${makeFracHTML(n1, d1)} ÷ ${makeFracHTML(n2, d2)}</p>`;
-                h += `<p>➔ <b>後ろの分数をひっくり返して（逆数にして）かけ算</b>に直します。</p>`;
-                h += `<div class="step-box">＝ ${makeFracHTML(n1, d1)} × ${makeFracHTML(d2, n2)}<br><br>＝ ${makeFracHTML(`${n1} × ${d2}`, `${d1} × ${n2}`)}<br><br>＝ ${makeFracHTML(rawNum, rawDen)}</div>`;
-                if (gcd(rawNum, rawDen) > 1 && rawDen !== 1) {
-                    h += `<p style="font-size:0.85rem; color:#666;">※ここから約分（同じ数でわる）をします。</p>`;
+
+                let gcd1 = gcd(calcN1, calcD2); 
+                let gcd2 = gcd(calcN2, calcD1); 
+
+                if (gcd1 > 1 || gcd2 > 1) {
+                    h += `<p style="color:#ff9800; font-weight:bold;">💡 計算をラクにするコツ：</p>`;
+                    h += `<p>分母と分子をななめによく見ると、かけ算をして数字を大きくする前に<b>その場で約分</b>ができます！</p>`;
+                    
+                    let crossStr1 = gcd1 > 1 ? `「分子の ${calcN1} と 分母の ${calcD2} を <b class="color-orange">${gcd1}</b> でわる」` : "";
+                    let crossStr2 = gcd2 > 1 ? `「分母の ${calcD1} と 分子の ${calcN2} を <b class="color-blue">${gcd2}</b> でわる」` : "";
+                    let connectStr = (gcd1 > 1 && gcd2 > 1) ? "、さらに" : "";
+                    h += `<p style="font-size:0.9rem; color:#555; padding-left:10px;">➔ ${crossStr1}${connectStr}${crossStr2} を先におこないます。</p>`;
+
+                    let nextN1 = calcN1 / gcd1;
+                    let nextD2 = calcD2 / gcd1;
+                    let nextN2 = calcN2 / gcd2;
+                    let nextD1 = calcD1 / gcd2;
+
+                    preReducedNum = nextN1 * nextN2;
+                    preReducedDen = nextD1 * nextD2;
+
+                    h += `<div class="step-box" style="line-height: 1.8; padding: 15px 12px;">`;
+                    h += `＝ ${generateYakubunHTML(calcN1, calcD1, calcN2, calcD2, gcd1, gcd2)}<br><br>`;
+                    h += `＝ ${makeFracHTML(`${nextN1} × ${nextN2}`, `${nextD1} × ${nextD2}`)}<br><br>`;
+                    h += `＝ ${makeFracHTML(preReducedNum, preReducedDen)}`;
+                    h += `</div>`;
+                } else {
+                    preReducedNum = calcN1 * calcN2;
+                    preReducedDen = calcD1 * calcD2;
+
+                    h += `<p>➔ 分母同士、分子同士をそれぞれ合体させます。</p>`;
+                    h += `<div class="step-box">`;
+                    h += `＝ ${makeFracHTML(`${calcN1} × ${calcN2}`, `${calcD1} × ${calcD2}`)}<br><br>`;
+                    h += `＝ ${makeFracHTML(preReducedNum, preReducedDen)}`;
+                    h += `</div>`;
                 }
             }
             else {
                 // たし算・ひき算
                 if (d1 === 1 && d2 === 1) {
+                    wasFractionCalc = false;
                     if (isSameSignAfterBracket) {
                         h += `<p>➔ 同じ符号なので絶対値を足し算： <b>${n1} ＋ ${n2}</b></p>`;
                         h += `<div class="step-box">＝ ${n1 + n2}</div>`;
                     } else {
                         if (n1 >= n2) {
-                            h += `<p>➔ 違う符号ので引き算（大きい方 － 小さい方）： <b>${n1} － ${n2}</b></p>`;
+                            h += `<p>➔ 違う符号なので引き算（大きい方 － 小さい方）： <b>${n1} － ${n2}</b></p>`;
                             h += `<div class="step-box">＝ ${n1 - n2}</div>`;
                         } else {
-                            h += `<p>➔ 違う符号ので引き算（大きい方 － 小さい方）： <b>${n2} － ${n1}</b></p>`;
+                            h += `<p>➔ 違う符号なので引き算（大きい方 － 小さい方）： <b>${n2} － ${n1}</b></p>`;
                             h += `<div class="step-box">＝ ${n2 - n1}</div>`;
                         }
                     }
                 } else {
-                    // 分数の通分プロセス
                     let commonDen = lcm(d1, d2);
                     let newN1 = n1 * (commonDen / d1);
                     let newN2 = n2 * (commonDen / d2);
@@ -637,15 +759,20 @@
                     h += `<p>➔ ${makeFracHTML(`${n1} × ${commonDen/d1}`, `${d1} × ${commonDen/d1}`)} と ${makeFracHTML(`${n2} × ${commonDen/d2}`, `${d2} × ${commonDen/d2}`)}</p>`;
                     
                     if (isSameSignAfterBracket) {
+                        preReducedNum = newN1 + newN2;
+                        preReducedDen = commonDen;
                         h += `<p>➔ 通分した式： ${makeFracHTML(newN1, commonDen)} ＋ ${makeFracHTML(newN2, commonDen)}</p>`;
-                        h += `<div class="step-box">＝ ${makeFracHTML(`${newN1} ＋ ${newN2}`, commonDen)}<br><br>＝ ${makeFracHTML(newN1 + newN2, commonDen)}</div>`;
+                        h += `<div class="step-box">＝ ${makeFracHTML(`${newN1} ＋ ${newN2}`, commonDen)}<br><br>＝ ${makeFracHTML(preReducedNum, preReducedDen)}</div>`;
                     } else {
+                        preReducedDen = commonDen;
                         if (newN1 >= newN2) {
+                            preReducedNum = newN1 - newN2;
                             h += `<p>➔ 通分した式（大きい分子 － 小さい分子）： ${makeFracHTML(newN1, commonDen)} － ${makeFracHTML(newN2, commonDen)}</p>`;
-                            h += `<div class="step-box">＝ ${makeFracHTML(`${newN1} － ${newN2}`, commonDen)}<br><br>＝ ${makeFracHTML(newN1 - newN2, commonDen)}</div>`;
+                            h += `<div class="step-box">＝ ${makeFracHTML(`${newN1} － ${newN2}`, commonDen)}<br><br>＝ ${makeFracHTML(preReducedNum, preReducedDen)}</div>`;
                         } else {
+                            preReducedNum = newN2 - newN1;
                             h += `<p>➔ 通分した式（大きい分子 － 小さい分子）： ${makeFracHTML(newN2, commonDen)} － ${makeFracHTML(newN1, commonDen)}</p>`;
-                            h += `<div class="step-box">＝ ${makeFracHTML(`${newN2} － ${newN1}`, commonDen)}<br><br>＝ ${makeFracHTML(newN2 - newN1, commonDen)}</div>`;
+                            h += `<div class="step-box">＝ ${makeFracHTML(`${newN2} － ${newN1}`, commonDen)}<br><br>＝ ${makeFracHTML(preReducedNum, preReducedDen)}</div>`;
                         }
                     }
                 }
@@ -654,22 +781,29 @@
 
         let absNum = Math.abs(currentAnswerObj.num);
         let absDen = currentAnswerObj.den;
-        let finalVal = absNum / absDen;
         
-        if (absDen === 1 || isDecimalMode) {
+        // 最後の仕上げ約分パート
+        if (wasFractionCalc && preReducedDen !== 1) {
+            let finalGcd = gcd(preReducedNum, preReducedDen);
+            if (finalGcd > 1) {
+                h += `<p style="color:#e91e63; font-weight:bold; margin-top:15px;">🔍 さいごに約分をして、きれいな数字に整えます：</p>`;
+                h += `<p>分母の ${preReducedDen} と分子の ${preReducedNum} は、どちらも <b>${finalGcd}</b> でわることができます。</p>`;
+                h += `<div class="step-box" style="line-height: 1.8; padding: 15px 12px;">`;
+                h += `➔ ${generateFinalYakubunHTML(preReducedNum, preReducedDen, finalGcd)} ＝ ${makeFracHTML(absNum, absDen)}`;
+                h += `</div>`;
+            }
+        }
+
+        if (absDen === 1) {
             h += `<p style="margin-top:10px;">➔ 計算した数字： `;
         } else {
             h += `<p style="margin-top:10px;">➔ 約分してきれいに整えた数字： `;
         }
 
-        if (isDecimalMode && Math.round(finalVal * 10) === finalVal * 10) {
-            h += `<b>${finalVal.toFixed(1)}</b>`;
+        if (absDen === 1) {
+            h += `<b>${absNum}</b>`;
         } else {
-            if (absDen === 1) {
-                h += `<b>${absNum}</b>`;
-            } else {
-                h += `${makeFracHTML(absNum, absDen)}`;
-            }
+            h += `${makeFracHTML(absNum, absDen)}`;
         }
         h += `</p></div><hr style="border:0; border-top:1px dashed #ddd; margin:10px 0;">`;
 
@@ -679,8 +813,6 @@
         let finalAnsStr = "";
         if (absDen === 1) {
             finalAnsStr = currentAnswerObj.num;
-        } else if (isDecimalMode && Math.round(finalVal * 10) === finalVal * 10) {
-            finalAnsStr = (currentAnswerObj.num / absDen).toFixed(1);
         } else {
             let s = currentAnswerObj.num < 0 ? "－" : "";
             finalAnsStr = `${s}${makeFracHTML(absNum, absDen)}`;
