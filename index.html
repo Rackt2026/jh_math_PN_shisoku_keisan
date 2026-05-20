@@ -36,6 +36,8 @@
         }
 
         /* スタート画面のスタイル */
+        .logo-wrapper { text-align: center; margin-bottom: 15px; }
+        .logo-img { max-width: 180px; height: auto; display: inline-block; vertical-align: middle; }
         .menu-title { text-align: center; color: #2196f3; font-size: 1.6rem; margin-bottom: 20px; font-weight: bold; line-height: 1.4; }
         .menu-list { display: flex; flex-direction: column; gap: 12px; }
         .menu-btn { background-color: #fff; border: 2px solid #2196f3; color: #2196f3; padding: 12px 15px; border-radius: 12px; font-size: 0.95rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #1976d2; text-align: left; transition: all 0.1s; -webkit-tap-highlight-color: transparent; }
@@ -116,6 +118,11 @@
 <body>
 
 <div class="container" id="start-screen">
+    <div class="logo-wrapper">
+        <a href="https://manabiya-tsubame.com/" target="_blank">
+            <img src="rogo.png" alt="ロゴ" class="logo-img">
+        </a>
+    </div>
     <div class="menu-title">数学マスター極<br><span style="font-size: 1.1rem; color:#555;">〜 正負の数：四則計算の試練 〜</span></div>
     <div class="menu-list">
         <button class="menu-btn" onclick="startGame(1)">１、正負の数の四則計算（自然数）</button>
@@ -198,7 +205,7 @@
     const msgSupport = [
         "さぁ次の問題も頑張ろう！",
         "その調子！次もいってみよう！",
-        "ナイス！次へ進おう！",
+        "ナイス！次へ進もう！",
         "いいリズム！次の問題へレッツゴー！",
         "次もこの調子でクリアしよう！"
     ];
@@ -541,8 +548,6 @@
 
     // ななめ約分用の色分け対応・合体分数式を生成する関数
     function generateYakubunHTML(n1, d1, n2, d2, g1, g2) {
-        // g1 (左上分子 と 右下分母) -> オレンジ指定
-        // g2 (左下分母 と 右上分子) -> 青指定
         let topLeft = createYakubunItemHTML(n1, g1, 'top', 'orange');
         let topRight = createYakubunItemHTML(n2, g2, 'top', 'blue');
         let bottomLeft = createYakubunItemHTML(d1, g2, 'bottom', 'blue');
@@ -617,22 +622,20 @@
         let preReducedDen = 1;
         let wasFractionCalc = false;
 
-        // 【改良部分】小数のわり算モードの処理変更（分数に転換する）
+        // 小数のわり算モード（最速ななめ約分ロジック内蔵）
         if (isDecimalMode && opSign === '÷') {
             wasFractionCalc = true;
-            let v1 = currentT1.rawAbs;
-            let v2 = currentT2.rawAbs;
             
             h += `<p>小数のわり算は、そのまま割ると割り切れない場合があるため、<b>分数に直して</b>計算を行います。</p>`;
             h += `<p>➔ 小数を分数に直した式： ${makeFracHTML(n1, 10)} ÷ ${makeFracHTML(n2, 10)}</p>`;
             h += `<p>➔ <b>後ろの分数をひっくり返して（逆数にして）かけ算</b>に直します。</p>`;
             h += `<p style="margin-left: 10px;">＝ ${makeFracHTML(n1, 10)} × ${makeFracHTML(10, n2)}</p>`;
             
-            let gcd1 = gcd(n1, n2); // 分子n1 と 分母n2
-            let gcd2 = 10;          // 分母10 と 分子10 (必ず10で割れる)
+            let gcd1 = gcd(n1, n2); 
+            let gcd2 = 10;          
 
-            h += `<p style="color:#ff9800; font-weight:bold;">💡 計算をラクにするコツ：</p>`;
-            h += `<p>分母と分子をななめによく見ると、かけ算をして数字を大きくする前に<b>その場で約分</b>ができます！</p>`;
+            h += `<p style="color:#ff9800; font-weight:bold;">💡 計算をラクにするコツ（最速約分）：</p>`;
+            h += `<p>数字が大きくなる前に、<b>合体させる前のこの段階で</b>ななめに約分をおこない、数字をできるだけ小さくします！</p>`;
             
             let crossStr1 = gcd1 > 1 ? `「分子の ${n1} と 分母の ${n2} を <b class="color-orange">${gcd1}</b> でわる」` : "";
             let crossStr2 = `「分母の 10 と 分子の 10 を <b class="color-blue">10</b> でわる」`;
@@ -641,8 +644,8 @@
 
             let nextN1 = n1 / gcd1;
             let nextD2 = n2 / gcd1;
-            let nextN2 = 1; // 10/10
-            let nextD1 = 1; // 10/10
+            let nextN2 = 1; 
+            let nextD1 = 1; 
 
             preReducedNum = nextN1 * nextN2;
             preReducedDen = nextD1 * nextD2;
@@ -702,8 +705,8 @@
                 let gcd2 = gcd(calcN2, calcD1); 
 
                 if (gcd1 > 1 || gcd2 > 1) {
-                    h += `<p style="color:#ff9800; font-weight:bold;">💡 計算をラクにするコツ：</p>`;
-                    h += `<p>分母と分子をななめによく見ると、かけ算をして数字を大きくする前に<b>その場で約分</b>ができます！</p>`;
+                    h += `<p style="color:#ff9800; font-weight:bold;">💡 計算をラクにするコツ（最速約分）：</p>`;
+                    h += `<p>分母と分子をななめによく見ると、かけ算をして数字を大きくする前の<b>この段階で</b>その場で約分ができます！</p>`;
                     
                     let crossStr1 = gcd1 > 1 ? `「分子の ${calcN1} と 分母の ${calcD2} を <b class="color-orange">${gcd1}</b> でわる」` : "";
                     let crossStr2 = gcd2 > 1 ? `「分母の ${calcD1} と 分子の ${calcN2} を <b class="color-blue">${gcd2}</b> でわる」` : "";
@@ -735,7 +738,7 @@
                 }
             }
             else {
-                // たし算・ひき算
+                // たし算・ひき算（最速・高精度約分ロジック）
                 if (d1 === 1 && d2 === 1) {
                     wasFractionCalc = false;
                     if (isSameSignAfterBracket) {
@@ -758,23 +761,36 @@
                     h += `<p>分母を <b>${commonDen}</b> にそろえます（通分）。</p>`;
                     h += `<p>➔ ${makeFracHTML(`${n1} × ${commonDen/d1}`, `${d1} × ${commonDen/d1}`)} と ${makeFracHTML(`${n2} × ${commonDen/d2}`, `${d2} × ${commonDen/d2}`)}</p>`;
                     
+                    let intermediateNum = 0;
                     if (isSameSignAfterBracket) {
-                        preReducedNum = newN1 + newN2;
-                        preReducedDen = commonDen;
+                        intermediateNum = newN1 + newN2;
                         h += `<p>➔ 通分した式： ${makeFracHTML(newN1, commonDen)} ＋ ${makeFracHTML(newN2, commonDen)}</p>`;
-                        h += `<div class="step-box">＝ ${makeFracHTML(`${newN1} ＋ ${newN2}`, commonDen)}<br><br>＝ ${makeFracHTML(preReducedNum, preReducedDen)}</div>`;
+                        h += `<p>➔ 分子をたし算します：</p>`;
+                        h += `<div class="step-box">＝ ${makeFracHTML(`${newN1} ＋ ${newN2}`, commonDen)}<br><br>＝ ${makeFracHTML(intermediateNum, commonDen)}</div>`;
                     } else {
-                        preReducedDen = commonDen;
                         if (newN1 >= newN2) {
-                            preReducedNum = newN1 - newN2;
-                            h += `<p>➔ 通分した式（大きい分子 － 小さい分子）： ${makeFracHTML(newN1, commonDen)} － ${makeFracHTML(newN2, commonDen)}</p>`;
-                            h += `<div class="step-box">＝ ${makeFracHTML(`${newN1} － ${newN2}`, commonDen)}<br><br>＝ ${makeFracHTML(preReducedNum, preReducedDen)}</div>`;
+                            intermediateNum = newN1 - newN2;
+                            h += `<p>➔ 通分した式： ${makeFracHTML(newN1, commonDen)} － ${makeFracHTML(newN2, commonDen)}</p>`;
                         } else {
-                            preReducedNum = newN2 - newN1;
-                            h += `<p>➔ 通分した式（大きい分子 － 小さい分子）： ${makeFracHTML(newN2, commonDen)} － ${makeFracHTML(newN1, commonDen)}</p>`;
-                            h += `<div class="step-box">＝ ${makeFracHTML(`${newN2} － ${newN1}`, commonDen)}<br><br>＝ ${makeFracHTML(preReducedNum, preReducedDen)}</div>`;
+                            intermediateNum = newN2 - newN1;
+                            h += `<p>➔ 通分した式： ${makeFracHTML(newN2, commonDen)} － ${makeFracHTML(newN1, commonDen)}</p>`;
                         }
+                        h += `<p>➔ 分子を引き算（大きい方 － 小さい方）します：</p>`;
+                        h += `<div class="step-box">＝ ${makeFracHTML(intermediateNum, commonDen)}</div>`;
                     }
+
+                    // 【高精度化】合体したこの最速のタイミングで約分を明示する
+                    let stepGcd = gcd(intermediateNum, commonDen);
+                    if (stepGcd > 1) {
+                        h += `<p style="color:#e91e63; font-weight:bold;">🔍 ここですぐに約分をして、数字を小さく整えます：</p>`;
+                        h += `<p>分母の ${commonDen} と分子の ${intermediateNum} は、どちらも <b>${stepGcd}</b> でわることができます。</p>`;
+                        h += `<div class="step-box" style="line-height: 1.8; padding: 15px 12px;">`;
+                        h += `＝ ${generateFinalYakubunHTML(intermediateNum, commonDen, stepGcd)}<br><br>＝ ${makeFracHTML(intermediateNum / stepGcd, commonDen / stepGcd)}`;
+                        h += `</div>`;
+                    }
+                    
+                    preReducedNum = intermediateNum;
+                    preReducedDen = commonDen;
                 }
             }
         }
@@ -782,10 +798,11 @@
         let absNum = Math.abs(currentAnswerObj.num);
         let absDen = currentAnswerObj.den;
         
-        // 最後の仕上げ約分パート
+        // 最後の仕上げ約分（掛け算・割り算など、上記ステップを通過した後の最終チェック）
         if (wasFractionCalc && preReducedDen !== 1) {
             let finalGcd = gcd(preReducedNum, preReducedDen);
-            if (finalGcd > 1) {
+            // すでに上記（足し算引き算など）で約分が済んでいない場合のみ表示
+            if (finalGcd > 1 && (preReducedNum / finalGcd === absNum && preReducedDen / finalGcd === absDen) && preReducedNum !== absNum) {
                 h += `<p style="color:#e91e63; font-weight:bold; margin-top:15px;">🔍 さいごに約分をして、きれいな数字に整えます：</p>`;
                 h += `<p>分母の ${preReducedDen} と分子の ${preReducedNum} は、どちらも <b>${finalGcd}</b> でわることができます。</p>`;
                 h += `<div class="step-box" style="line-height: 1.8; padding: 15px 12px;">`;
